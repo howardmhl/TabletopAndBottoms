@@ -584,12 +584,12 @@ setInterval(() => {
   const diffMs = Date.now() - t.getTime();
   const diffMin = Math.floor(diffMs / 60000);
 
-  if (diffMin <= 0) el.textContent = "Updated just now";
-  else if (diffMin === 1) el.textContent = "Updated 1 minute ago";
-  else if (diffMin < 60) el.textContent = `Updated ${diffMin} minutes ago`;
+  if (diffMin <= 0) el.textContent = "";
+  else if (diffMin === 1) el.textContent = "";
+  else if (diffMin < 60) el.textContent = ``;
   else {
     const hours = Math.floor(diffMin / 60);
-    el.textContent = `Updated ${hours} hour${hours > 1 ? "s" : ""} ago`;
+    el.textContent = ``;
   }
 }, 30000);
 //#endregion
