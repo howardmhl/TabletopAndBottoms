@@ -4,25 +4,35 @@
   <meta charset="UTF-8" />
   <title>Tabletop and Bottoms</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎲</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Favicon -->
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎲</text></svg>"
+  />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
+    rel="stylesheet"
+  />
 
+  <!-- Styles & Libraries -->
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app">
+    <!-- Header -->
     <div class="card card-header">
       <div class="header-row">
         <div>
           <h1>Tabletop and Bottoms</h1>
-          <div class="subtitle">Games Night Leaderboard
-          </div>
+          <div class="subtitle">Games Night Leaderboard</div>
         </div>
+
         <div class="header-controls">
           <div class="header-buttons">
             <div class="tabs">
@@ -30,7 +40,7 @@
               <button id="tab-detail" class="tab-btn">Stats</button>
             </div>
             <div class="refresh-wrapper">
-              <button id="refresh-btn" class="refresh-btn">⟳</button>
+              <button id="refresh-btn" class="refresh-btn">↻</button>
               <span id="sync-status" class="sync-status"></span>
             </div>
           </div>
@@ -38,11 +48,13 @@
       </div>
     </div>
 
+    <!-- Simple View -->
     <div id="view-simple" class="card">
       <div class="header-row view-header">
         <h2>Leaderboard</h2>
         <span class="small" id="simple-games-label">Games logged: 0</span>
       </div>
+
       <table class="table">
         <thead>
           <tr>
@@ -52,17 +64,22 @@
           </tr>
         </thead>
         <tbody id="simple-leaderboard-body">
-          <tr><td colspan="3" class="small">Fetching data…</td></tr>
+          <tr>
+            <td colspan="3" class="small">Fetching data…</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
+    <!-- Detailed View -->
     <div id="view-detail" class="hidden">
+      <!-- Games Summary -->
       <div class="card">
         <div class="header-row view-header">
           <h2>Games</h2>
           <span class="small" id="detail-games-label">Games logged: 0</span>
         </div>
+
         <div class="panel">
           <table class="table">
             <thead>
@@ -73,28 +90,35 @@
               </tr>
             </thead>
             <tbody id="games-summary-body">
-              <tr><td colspan="3" class="small">Fetching game stats…</td></tr>
+              <tr>
+                <td colspan="3" class="small">Fetching game stats…</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- Stats -->
       <div class="card">
         <div class="header-row view-header">
           <h2 id="players-title"></h2>
 
           <div class="game-dropdown">
-            <button type="button" id="game-dropdown-toggle" class="game-dropdown-toggle">
+            <button
+              type="button"
+              id="game-dropdown-toggle"
+              class="game-dropdown-toggle"
+            >
               <span id="game-dropdown-label">Loading…</span>
             </button>
-            <div class="game-dropdown-menu" id="game-dropdown-menu">
-            </div>
-          
+
+            <div class="game-dropdown-menu" id="game-dropdown-menu"></div>
+
+            <!-- Native select kept for accessibility / fallback -->
             <select id="game-select" aria-hidden="true" tabindex="-1">
               <option>Loading…</option>
             </select>
           </div>
-          
-
         </div>
 
         <div class="panel">
@@ -107,22 +131,27 @@
               </tr>
             </thead>
             <tbody id="game-player-body">
-              <tr><td colspan="3" class="small">Select a game to see stats.</td></tr>
+              <tr>
+                <td colspan="3" class="small">
+                  Select a game to see stats.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
 
+      <!-- Cards -->
       <div class="card">
         <div class="header-row view-header">
-          <h2></h2>
-          <span class="small"></span>
+          <h2>Player Overview</h2>
+          <span class="small" id="player-overview-note"></span>
         </div>
+
         <div id="player-stat-cards" class="stat-card-grid">
           <div class="small">Loading player stats…</div>
         </div>
       </div>
-
     </div>
   </div>
 
