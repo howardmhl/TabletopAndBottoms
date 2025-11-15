@@ -32,11 +32,10 @@ const HEADER_HINTS_PLAYERS = {
 // State //
 let matches = [];
 let playersStats = {};
-let playerMeta = {};       
+let playerMeta = {};
 
-
-let perGameSummary = {};   
-let perGamePlayers = {};   
+let perGameSummary = {};
+let perGamePlayers = {};
 let currentSelectedGame = null;
 
 // Header //
@@ -57,7 +56,7 @@ function findColumnIndex(headers, hintConfig, key, keywords) {
   return -1;
 }
 
- // Stats //
+// Stats //
 function computeStats() {
   const stats = {};
   matches.forEach(m => {
@@ -113,11 +112,9 @@ function computePerGameStats() {
   perGamePlayers = perGame;
 
   const games = Object.keys(perGameSummary);
-
   if (!currentSelectedGame || (!games.includes(currentSelectedGame) && currentSelectedGame !== "__ALL__")) {
     currentSelectedGame = "__ALL__";
   }
-  
 }
 
 // Players //
@@ -172,15 +169,26 @@ function renderSimpleLeaderboard() {
     return;
   }
 
+  let currentRank = 0;
+  let lastPoints = null;
+
   entries.forEach((p, index) => {
+    if (p.points !== lastPoints) {
+      currentRank = index + 1;
+      lastPoints = p.points;
+    }
+    p.rank = currentRank;
+  });
+
+  entries.forEach(p => {
     const tr = document.createElement("tr");
     let rankClass = "";
-    if (index === 0) rankClass = "top1";
-    else if (index === 1) rankClass = "top2";
-    else if (index === 2) rankClass = "top3";
+    if (p.rank === 1) rankClass = "top1";
+    else if (p.rank === 2) rankClass = "top2";
+    else if (p.rank === 3) rankClass = "top3";
 
     tr.innerHTML = `
-      <td class="rank ${rankClass}">${index + 1}</td>
+      <td class="rank ${rankClass}">${p.rank}</td>
       <td>${renderPlayerCell(p.name)}</td>
       <td>${p.points}</td>
     `;
@@ -226,43 +234,110 @@ function renderGamesSummary() {
   });
 }
 
+/**
+ * Custom dropdown + hidden select renderer
+ */
 function renderGameSelect() {
   const select = document.getElementById("game-select");
+  const dropdown = document.querySelector(".game-dropdown");
+  const dropdownMenu = document.getElementById("game-dropdown-menu");
+  const dropdownLabel = document.getElementById("game-dropdown-label");
+
   if (!select) return;
 
-  const games = Object.keys(perGameSummary).sort((a, b) =>
-    a.localeCompare(b)
-  );
-
+  const games = Object.keys(perGameSummary).sort((a, b) => a.localeCompare(b));
   const previous = currentSelectedGame;
+
   select.innerHTML = "";
+  if (dropdownMenu) dropdownMenu.innerHTML = "";
 
   if (games.length === 0) {
     const opt = document.createElement("option");
     opt.value = "";
     opt.textContent = "No games yet";
     select.appendChild(opt);
+
+    if (dropdownLabel) dropdownLabel.textContent = "No games yet";
+    if (dropdownMenu) {
+      const div = document.createElement("div");
+      div.className = "game-dropdown-empty";
+      div.textContent = "Log a game to see stats here.";
+      dropdownMenu.appendChild(div);
+    }
+
     currentSelectedGame = null;
     return;
   }
 
-  if (!previous || !games.includes(previous)) {
+  if (!previous || (!games.includes(previous) && previous !== "__ALL__")) {
     currentSelectedGame = "__ALL__";
   }
 
-  const allOpt = document.createElement("option");
-  allOpt.value = "__ALL__";
-  allOpt.textContent = "All";
-  if (currentSelectedGame === "__ALL__") allOpt.selected = true;
-  select.appendChild(allOpt);
+  function addSelectOption(value, text) {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = text;
+    if (value === currentSelectedGame) opt.selected = true;
+    select.appendChild(opt);
+  }
+
+  function createMenuItem(value, label) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "game-dropdown-item";
+    btn.dataset.value = value;
+
+    if (value === currentSelectedGame) {
+      btn.classList.add("active");
+    }
+
+    btn.innerHTML = `
+      <span>${label}</span>
+      <span class="game-dropdown-item-badge"></span>
+    `;
+    return btn;
+  }
+
+  addSelectOption("__ALL__", "All");
+  if (dropdownMenu) {
+    dropdownMenu.appendChild(createMenuItem("__ALL__", "All games"));
+  }
 
   games.forEach(g => {
-    const opt = document.createElement("option");
-    opt.value = g;
-    opt.textContent = g;
-    if (g === currentSelectedGame) opt.selected = true;
-    select.appendChild(opt);
+    addSelectOption(g, g);
+    if (dropdownMenu) {
+      dropdownMenu.appendChild(createMenuItem(g, g));
+    }
   });
+
+  if (dropdownLabel) {
+    if (currentSelectedGame === "__ALL__") {
+      dropdownLabel.textContent = "All games";
+    } else {
+      dropdownLabel.textContent = currentSelectedGame || "Select game";
+    }
+  }
+
+  if (dropdownMenu) {
+    dropdownMenu.querySelectorAll(".game-dropdown-item").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const value = btn.dataset.value || null;
+        currentSelectedGame = value;
+
+        select.value = value;
+
+        if (dropdownLabel) {
+          dropdownLabel.textContent = value === "__ALL__" ? "All games" : value;
+        }
+
+        if (dropdown) dropdown.classList.remove("open");
+
+        renderGamePlayerTable();
+        renderGamesSummary();
+        updatePlayersTitle();
+      });
+    });
+  }
 }
 
 function renderGamePlayerTable() {
@@ -271,7 +346,7 @@ function renderGamePlayerTable() {
   tbody.innerHTML = "";
 
   if (!currentSelectedGame) {
-    tbody.innerHTML = `<tr><td colspan="3" class="small">Select a game to see player stats.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="small"></td></tr>`;
     return;
   }
 
@@ -292,7 +367,7 @@ function renderGamePlayerTable() {
   }
 
   if (!statsMap || Object.keys(statsMap).length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" class="small">No player stats for this selection.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="small"></td></tr>`;
     return;
   }
 
@@ -350,7 +425,7 @@ function renderPlayerStatCards() {
     const card = document.createElement("div");
     card.className = "stat-card";
 
-    const badge = index === 0 ? "👑" : "⭐";
+    const badge = index === 0 ? "":""; //"👑" : "⭐";
 
     card.innerHTML = `
       <div class="stat-card-header">
@@ -423,7 +498,7 @@ function updateLastSync(errorText) {
 
   const now = new Date();
   el.dataset.timestamp = now.toISOString();
-  el.textContent = "Updated just now";
+  el.textContent = "";
 }
 
 setInterval(() => {
@@ -450,7 +525,7 @@ function updatePlayersTitle() {
 
   const value = currentSelectedGame;
   if (value === "__ALL__") {
-    title.textContent = "All";
+    title.textContent = "All Games";
   } else if (!value) {
     title.textContent = "";
   } else {
@@ -494,6 +569,7 @@ function loadPlayersSheet() {
   document.body.appendChild(script);
 }
 
+// JSONP handlers //
 window.handleGamesSheet = function(json) {
   try {
     const table = json.table;
@@ -505,11 +581,11 @@ window.handleGamesSheet = function(json) {
       throw new Error("No columns in log sheet");
     }
 
-    const idxDate = findColumnIndex(headers, HEADER_HINTS_LOG, "date",    ["date"]);
-    const idxGame = findColumnIndex(headers, HEADER_HINTS_LOG, "game",    ["game"]);
+    const idxDate    = findColumnIndex(headers, HEADER_HINTS_LOG, "date",    ["date"]);
+    const idxGame    = findColumnIndex(headers, HEADER_HINTS_LOG, "game",    ["game"]);
     const idxWinners = findColumnIndex(headers, HEADER_HINTS_LOG, "winners", ["winner", "winners", "victor"]);
     const idxPlayers = findColumnIndex(headers, HEADER_HINTS_LOG, "players", ["player", "players", "participants"]);
-    const idxNotes = findColumnIndex(headers, HEADER_HINTS_LOG, "notes",  ["note", "notes", "comment"]);
+    const idxNotes   = findColumnIndex(headers, HEADER_HINTS_LOG, "notes",   ["note", "notes", "comment"]);
 
     matches = rows.map((row, idx) => {
       const cells = row.c || [];
@@ -662,6 +738,26 @@ function setupGameSelectListener() {
   select.dataset.bound = "1";
 }
 
+function setupCustomGameDropdownToggle() {
+  const dropdown = document.querySelector(".game-dropdown");
+  const toggle = document.getElementById("game-dropdown-toggle");
+  const menu = document.getElementById("game-dropdown-menu");
+  if (!dropdown || !toggle || !menu || toggle.dataset.bound) return;
+
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("open");
+    }
+  });
+
+  toggle.dataset.bound = "1";
+}
+
 function setupRefreshButton() {
   const refreshBtn = document.getElementById("refresh-btn");
   if (!refreshBtn) return;
@@ -674,6 +770,7 @@ function setupRefreshButton() {
 document.addEventListener("DOMContentLoaded", () => {
   setupTabs();
   setupGameSelectListener();
+  setupCustomGameDropdownToggle();
   setupRefreshButton();
   loadGamesSheet();
   loadPlayersSheet();

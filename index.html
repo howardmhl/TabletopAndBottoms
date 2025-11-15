@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Tabletop and Bottoms</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎲</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -31,6 +31,7 @@
             </div>
             <div class="refresh-wrapper">
               <button id="refresh-btn" class="refresh-btn">⟳</button>
+              <span id="sync-status" class="sync-status"></span>
             </div>
           </div>
         </div>
@@ -80,11 +81,22 @@
       <div class="card">
         <div class="header-row view-header">
           <h2 id="players-title"></h2>
-          <div class="dropdown" id="game-dropdown">
-            <button class="dropdown-button" id="dropdown-button">Loading…</button>
-            <div class="dropdown-menu" id="dropdown-menu"></div>
-          </div>          
+
+          <div class="game-dropdown">
+            <button type="button" id="game-dropdown-toggle" class="game-dropdown-toggle">
+              <span id="game-dropdown-label">Loading…</span>
+            </button>
+            <div class="game-dropdown-menu" id="game-dropdown-menu">
+            </div>
+          
+            <select id="game-select" aria-hidden="true" tabindex="-1">
+              <option>Loading…</option>
+            </select>
+          </div>
+          
+
         </div>
+
         <div class="panel">
           <table class="table">
             <thead>
@@ -100,6 +112,7 @@
           </table>
         </div>
       </div>
+
       <div class="card">
         <div class="header-row view-header">
           <h2></h2>
@@ -109,6 +122,7 @@
           <div class="small">Loading player stats…</div>
         </div>
       </div>
+
     </div>
   </div>
 
