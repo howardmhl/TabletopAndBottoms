@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tabletop and Bottoms</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app">
+    <div class="card card-header">
+      <div class="header-row">
+        <div>
+          <h1>Tabletop and Bottoms</h1>
+          <div class="subtitle">Games Night Leaderboard
+          </div>
+        </div>
+        <div class="header-controls">
+          <div class="header-buttons">
+            <div class="tabs">
+              <button id="tab-simple" class="tab-btn active">Leaderboard</button>
+              <button id="tab-detail" class="tab-btn">Stats</button>
+            </div>
+            <div class="refresh-wrapper">
+              <button id="refresh-btn" class="refresh-btn">⟳</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-simple" class="card">
+      <div class="header-row view-header">
+        <h2>Leaderboard</h2>
+        <span class="small" id="simple-games-label">Games logged: 0</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody id="simple-leaderboard-body">
+          <tr><td colspan="3" class="small">Fetching data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="view-detail" class="hidden">
+      <div class="card">
+        <div class="header-row view-header">
+          <h2>Games</h2>
+          <span class="small" id="detail-games-label">Games logged: 0</span>
+        </div>
+        <div class="panel">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Game</th>
+                <th>Times played</th>
+              </tr>
+            </thead>
+            <tbody id="games-summary-body">
+              <tr><td colspan="3" class="small">Fetching game stats…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="header-row view-header">
+          <h2 id="players-title"></h2>
+          <div class="dropdown" id="game-dropdown">
+            <button class="dropdown-button" id="dropdown-button">Loading…</button>
+            <div class="dropdown-menu" id="dropdown-menu"></div>
+          </div>          
+        </div>
+        <div class="panel">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Times played</th>
+                <th>Wins</th>
+              </tr>
+            </thead>
+            <tbody id="game-player-body">
+              <tr><td colspan="3" class="small">Select a game to see stats.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="header-row view-header">
+          <h2></h2>
+          <span class="small"></span>
+        </div>
+        <div id="player-stat-cards" class="stat-card-grid">
+          <div class="small">Loading player stats…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
