@@ -1,4 +1,4 @@
-// Config //
+//#region Config
 const SHEET_ID = "1G2czJrtyfVnZrfXyT7R9B2n4IQm8towBW8zrXL_yBy4";
 const SHEET_LOG_NAME = "log";
 const SHEET_PLAYERS_NAME = "players";
@@ -17,28 +17,29 @@ function buildGvizUrl(sheetName, handlerName) {
 }
 
 const HEADER_HINTS_LOG = {
-  date:    null,
-  game:    null,
+  date: null,
+  game: null,
   winners: null,
   players: null,
-  notes:   null
+  notes: null
 };
 
 const HEADER_HINTS_PLAYERS = {
   name: null,
   icon: null
 };
+//#endregion
 
-// State //
+//#region State
 let matches = [];
 let playersStats = {};
 let playerMeta = {};
-
 let perGameSummary = {};
 let perGamePlayers = {};
 let currentSelectedGame = null;
+//#endregion
 
-// Header //
+//#region Header
 function findColumnIndex(headers, hintConfig, key, keywords) {
   const hint = hintConfig[key];
   if (hint) {
@@ -56,8 +57,121 @@ function findColumnIndex(headers, hintConfig, key, keywords) {
   return -1;
 }
 
-// Stats //
-function computeStats() {
+function parseMatchRow(row, indexes, rowIndex) {
+  const cells = row.c || [];
+  const safe = i => {
+    const cell = cells[i];
+    if (!cell || cell.v == null) return "";
+    return String(cell.v);
+  };
+
+  const date = indexes.date !== -1 ? safe(indexes.date) : "";
+  const game = indexes.game !== -1 ? safe(indexes.game) : "";
+  const winnersStr = indexes.winners !== -1 ? safe(indexes.winners) : "";
+  const playersStr = indexes.players !== -1 ? safe(indexes.players) : "";
+  const notes = indexes.notes !== -1 ? safe(indexes.notes) : "";
+
+  const winners = winnersStr
+    .split(/[;,]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const players = playersStr
+    .split(/[;,]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  return {
+    date,
+    game,
+    winners,
+    players,
+    notes,
+    timestamp: rowIndex
+  };
+}
+//#endregion
+
+//#region Sort
+function sortPlayersByWinsThenName(entries) {
+  return entries.sort((a, b) => {
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function applyTiedRanks(entries, scoreKey) {
+  let currentRank = 0;
+  let lastScore = null;
+
+  entries.forEach((p, index) => {
+    const score = p[scoreKey];
+    if (score !== lastScore) {
+      currentRank = index + 1;
+      lastScore = score;
+    }
+    p.rank = currentRank;
+  });
+
+  return entries;
+}
+//#endregion
+
+//#region DOM
+function createOption(value, text, isSelected) {
+  const opt = document.createElement("option");
+  opt.value = value;
+  opt.textContent = text;
+  if (isSelected) opt.selected = true;
+  return opt;
+}
+
+function createGameMenuItem(value, label, isActive) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "game-dropdown-item";
+  if (isActive) btn.classList.add("active");
+  btn.dataset.value = value;
+  btn.innerHTML = `
+    <span>${label}</span>
+    <span class="game-dropdown-item-badge"></span>
+  `;
+  return btn;
+}
+//#endregion
+
+//#region Player
+function getInitials(name) {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function renderPlayerCell(name) {
+  const meta = playerMeta[name.toLowerCase()];
+  if (meta && meta.icon) {
+    const safeUrl = meta.icon.replace(/"/g, "&quot;");
+    return `
+      <div class="player-cell">
+        <div class="avatar" style="background-image:url('${safeUrl}')"></div>
+        <span>${name}</span>
+      </div>
+    `;
+  } else {
+    const initials = getInitials(name);
+    return `
+      <div class="player-cell">
+        <div class="avatar avatar-initials">${initials}</div>
+        <span>${name}</span>
+      </div>
+    `;
+  }
+}
+//#endregion
+
+//#region Stats
+function computeGlobalPlayerStats() {
   const stats = {};
   matches.forEach(m => {
     m.players.forEach(p => {
@@ -76,7 +190,7 @@ function computeStats() {
   playersStats = stats;
 }
 
-function computePerGameStats() {
+function computePerGameAggregates() {
   const summary = {};
   const perGame = {};
 
@@ -116,51 +230,21 @@ function computePerGameStats() {
     currentSelectedGame = "__ALL__";
   }
 }
+//#endregion
 
-// Players //
-function getInitials(name) {
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-function renderPlayerCell(name) {
-  const meta = playerMeta[name.toLowerCase()];
-  if (meta && meta.icon) {
-    const safeUrl = meta.icon.replace(/"/g, "&quot;");
-    return `
-      <div class="player-cell">
-        <div class="avatar" style="background-image:url('${safeUrl}')"></div>
-        <span>${name}</span>
-      </div>
-    `;
-  } else {
-    const initials = getInitials(name);
-    return `
-      <div class="player-cell">
-        <div class="avatar avatar-initials">${initials}</div>
-        <span>${name}</span>
-      </div>
-    `;
-  }
-}
-
-// Simple View //
+//#region Simple
 function renderSimpleLeaderboard() {
   const tbody = document.getElementById("simple-leaderboard-body");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const entries = Object.entries(playersStats).map(([name, stats]) => {
-    const points = stats.wins;
-    return { name, points };
-  });
+  const entries = Object.entries(playersStats).map(([name, stats]) => ({
+    name,
+    wins: stats.wins
+  }));
 
-  entries.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    return a.name.localeCompare(b.name);
-  });
+  sortPlayersByWinsThenName(entries);
+  applyTiedRanks(entries, "wins");
 
   if (entries.length === 0) {
     const tr = document.createElement("tr");
@@ -168,17 +252,6 @@ function renderSimpleLeaderboard() {
     tbody.appendChild(tr);
     return;
   }
-
-  let currentRank = 0;
-  let lastPoints = null;
-
-  entries.forEach((p, index) => {
-    if (p.points !== lastPoints) {
-      currentRank = index + 1;
-      lastPoints = p.points;
-    }
-    p.rank = currentRank;
-  });
 
   entries.forEach(p => {
     const tr = document.createElement("tr");
@@ -190,7 +263,7 @@ function renderSimpleLeaderboard() {
     tr.innerHTML = `
       <td class="rank ${rankClass}">${p.rank}</td>
       <td>${renderPlayerCell(p.name)}</td>
-      <td>${p.points}</td>
+      <td>${p.wins}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -200,8 +273,9 @@ function renderSimpleLeaderboard() {
     label.textContent = `Games logged: ${matches.length}`;
   }
 }
+//#endregion
 
-// Detailed View //
+//#region Detailed
 function renderGamesSummary() {
   const tbody = document.getElementById("games-summary-body");
   if (!tbody) return;
@@ -224,7 +298,7 @@ function renderGamesSummary() {
 
   entries.forEach((e, index) => {
     const tr = document.createElement("tr");
-    const highlightClass = (e.game === currentSelectedGame) ? "top1" : "";
+    const highlightClass = e.game === currentSelectedGame ? "top1" : "";
     tr.innerHTML = `
       <td class="rank ${highlightClass}">${index + 1}</td>
       <td>${e.game}</td>
@@ -232,112 +306,6 @@ function renderGamesSummary() {
     `;
     tbody.appendChild(tr);
   });
-}
-
-/**
- * Custom dropdown + hidden select renderer
- */
-function renderGameSelect() {
-  const select = document.getElementById("game-select");
-  const dropdown = document.querySelector(".game-dropdown");
-  const dropdownMenu = document.getElementById("game-dropdown-menu");
-  const dropdownLabel = document.getElementById("game-dropdown-label");
-
-  if (!select) return;
-
-  const games = Object.keys(perGameSummary).sort((a, b) => a.localeCompare(b));
-  const previous = currentSelectedGame;
-
-  select.innerHTML = "";
-  if (dropdownMenu) dropdownMenu.innerHTML = "";
-
-  if (games.length === 0) {
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.textContent = "No games yet";
-    select.appendChild(opt);
-
-    if (dropdownLabel) dropdownLabel.textContent = "No games yet";
-    if (dropdownMenu) {
-      const div = document.createElement("div");
-      div.className = "game-dropdown-empty";
-      div.textContent = "Log a game to see stats here.";
-      dropdownMenu.appendChild(div);
-    }
-
-    currentSelectedGame = null;
-    return;
-  }
-
-  if (!previous || (!games.includes(previous) && previous !== "__ALL__")) {
-    currentSelectedGame = "__ALL__";
-  }
-
-  function addSelectOption(value, text) {
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = text;
-    if (value === currentSelectedGame) opt.selected = true;
-    select.appendChild(opt);
-  }
-
-  function createMenuItem(value, label) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "game-dropdown-item";
-    btn.dataset.value = value;
-
-    if (value === currentSelectedGame) {
-      btn.classList.add("active");
-    }
-
-    btn.innerHTML = `
-      <span>${label}</span>
-      <span class="game-dropdown-item-badge"></span>
-    `;
-    return btn;
-  }
-
-  addSelectOption("__ALL__", "All");
-  if (dropdownMenu) {
-    dropdownMenu.appendChild(createMenuItem("__ALL__", "All games"));
-  }
-
-  games.forEach(g => {
-    addSelectOption(g, g);
-    if (dropdownMenu) {
-      dropdownMenu.appendChild(createMenuItem(g, g));
-    }
-  });
-
-  if (dropdownLabel) {
-    if (currentSelectedGame === "__ALL__") {
-      dropdownLabel.textContent = "All games";
-    } else {
-      dropdownLabel.textContent = currentSelectedGame || "Select game";
-    }
-  }
-
-  if (dropdownMenu) {
-    dropdownMenu.querySelectorAll(".game-dropdown-item").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const value = btn.dataset.value || null;
-        currentSelectedGame = value;
-
-        select.value = value;
-
-        if (dropdownLabel) {
-          dropdownLabel.textContent = value === "__ALL__" ? "All games" : value;
-        }
-
-        if (dropdown) dropdown.classList.remove("open");
-
-        renderGamePlayerTable();
-        renderGamesSummary();
-        updatePlayersTitle();
-      });
-    });
-  }
 }
 
 function renderGamePlayerTable() {
@@ -358,7 +326,7 @@ function renderGamePlayerTable() {
       Object.entries(gameMap).forEach(([name, st]) => {
         if (!aggregate[name]) aggregate[name] = { plays: 0, wins: 0 };
         aggregate[name].plays += st.plays;
-        aggregate[name].wins  += st.wins;
+        aggregate[name].wins += st.wins;
       });
     });
     statsMap = aggregate;
@@ -402,8 +370,113 @@ function renderDetailLeaderboard() {
   const label = document.getElementById("detail-games-label");
   if (label) label.textContent = `Games logged: ${matches.length}`;
 }
+//#endregion
 
-// Cards //
+//#region Dropdown
+function renderGameSelect() {
+  const select = document.getElementById("game-select");
+  const dropdown = document.querySelector(".game-dropdown");
+  const dropdownMenu = document.getElementById("game-dropdown-menu");
+  const dropdownLabel = document.getElementById("game-dropdown-label");
+
+  if (!select) return;
+
+  const games = Object.keys(perGameSummary).sort((a, b) => a.localeCompare(b));
+  const previous = currentSelectedGame;
+
+  select.innerHTML = "";
+  if (dropdownMenu) dropdownMenu.innerHTML = "";
+
+  if (games.length === 0) {
+    const opt = createOption("", "No games yet", true);
+    select.appendChild(opt);
+
+    if (dropdownLabel) dropdownLabel.textContent = "No games yet";
+    if (dropdownMenu) {
+      const div = document.createElement("div");
+      div.className = "game-dropdown-empty";
+      div.textContent = "Log a game to see stats here.";
+      dropdownMenu.appendChild(div);
+    }
+
+    currentSelectedGame = null;
+    return;
+  }
+
+  if (!previous || (!games.includes(previous) && previous !== "__ALL__")) {
+    currentSelectedGame = "__ALL__";
+  }
+
+  const allSelected = currentSelectedGame === "__ALL__";
+  select.appendChild(createOption("__ALL__", "All", allSelected));
+  if (dropdownMenu) {
+    dropdownMenu.appendChild(
+      createGameMenuItem("__ALL__", "All games", allSelected)
+    );
+  }
+
+  games.forEach(g => {
+    const isSelected = g === currentSelectedGame;
+    select.appendChild(createOption(g, g, isSelected));
+    if (dropdownMenu) {
+      dropdownMenu.appendChild(
+        createGameMenuItem(g, g, isSelected)
+      );
+    }
+  });
+
+  if (dropdownLabel) {
+    if (currentSelectedGame === "__ALL__") {
+      dropdownLabel.textContent = "All games";
+    } else {
+      dropdownLabel.textContent = currentSelectedGame || "Select game";
+    }
+  }
+
+  if (dropdownMenu) {
+    dropdownMenu.querySelectorAll(".game-dropdown-item").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const value = btn.dataset.value || null;
+        currentSelectedGame = value;
+
+        select.value = value;
+
+        if (dropdownLabel) {
+          dropdownLabel.textContent = value === "__ALL__" ? "All games" : value;
+        }
+
+        if (dropdown) dropdown.classList.remove("open");
+
+        renderGamePlayerTable();
+        renderGamesSummary();
+        updatePlayersTitle();
+      });
+    });
+  }
+}
+
+function setupCustomGameDropdownToggle() {
+  const dropdown = document.querySelector(".game-dropdown");
+  const toggle = document.getElementById("game-dropdown-toggle");
+  const menu = document.getElementById("game-dropdown-menu");
+  if (!dropdown || !toggle || !menu || toggle.dataset.bound) return;
+
+  toggle.addEventListener("click", e => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
+  });
+
+  document.addEventListener("click", e => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("open");
+    }
+  });
+
+  toggle.dataset.bound = "1";
+}
+//#endregion
+
+//#region Cards
 function renderPlayerStatCards() {
   const container = document.getElementById("player-stat-cards");
   if (!container) return;
@@ -414,7 +487,7 @@ function renderPlayerStatCards() {
     return { name, games: stats.games, wins: stats.wins, winRate };
   });
 
-  entries.sort((a, b) => b.wins - a.wins || a.name.localeCompare(b.name));
+  sortPlayersByWinsThenName(entries);
 
   if (entries.length === 0) {
     container.innerHTML = `<div class="small">No players yet – log a game first!</div>`;
@@ -425,7 +498,7 @@ function renderPlayerStatCards() {
     const card = document.createElement("div");
     card.className = "stat-card";
 
-    const badge = index === 0 ? "":""; //"👑" : "⭐";
+    const badge = index === 0 ? "👑" : "⭐";
 
     card.innerHTML = `
       <div class="stat-card-header">
@@ -450,8 +523,9 @@ function renderPlayerStatCards() {
     container.appendChild(card);
   });
 }
+//#endregion
 
-// History //
+//#region History
 function renderHistory() {
   const list = document.getElementById("history-list");
   if (!list) return;
@@ -485,8 +559,9 @@ function renderHistory() {
     list.appendChild(div);
   });
 }
+//#endregion
 
-// Sync //
+//#region Sync
 function updateLastSync(errorText) {
   const el = document.getElementById("sync-status");
   if (!el) return;
@@ -517,8 +592,9 @@ setInterval(() => {
     el.textContent = `Updated ${hours} hour${hours > 1 ? "s" : ""} ago`;
   }
 }, 30000);
+//#endregion
 
-// Cards //
+//#region Titles
 function updatePlayersTitle() {
   const title = document.getElementById("players-title");
   if (!title) return;
@@ -532,8 +608,9 @@ function updatePlayersTitle() {
     title.textContent = `${value}`;
   }
 }
+//#endregion
 
-// Loading //
+//#region Data Loading
 function loadGamesSheet() {
   const simpleBody = document.getElementById("simple-leaderboard-body");
   if (simpleBody) {
@@ -568,9 +645,10 @@ function loadPlayersSheet() {
   script.src = buildGvizUrl(SHEET_PLAYERS_NAME, "handlePlayersSheet");
   document.body.appendChild(script);
 }
+//#endregion
 
-// JSONP handlers //
-window.handleGamesSheet = function(json) {
+//#region JSONP Handlers
+window.handleGamesSheet = function (json) {
   try {
     const table = json.table;
     const cols = table.cols || [];
@@ -581,53 +659,28 @@ window.handleGamesSheet = function(json) {
       throw new Error("No columns in log sheet");
     }
 
-    const idxDate    = findColumnIndex(headers, HEADER_HINTS_LOG, "date",    ["date"]);
-    const idxGame    = findColumnIndex(headers, HEADER_HINTS_LOG, "game",    ["game"]);
+    const idxDate = findColumnIndex(headers, HEADER_HINTS_LOG, "date", ["date"]);
+    const idxGame = findColumnIndex(headers, HEADER_HINTS_LOG, "game", ["game"]);
     const idxWinners = findColumnIndex(headers, HEADER_HINTS_LOG, "winners", ["winner", "winners", "victor"]);
     const idxPlayers = findColumnIndex(headers, HEADER_HINTS_LOG, "players", ["player", "players", "participants"]);
-    const idxNotes   = findColumnIndex(headers, HEADER_HINTS_LOG, "notes",   ["note", "notes", "comment"]);
+    const idxNotes = findColumnIndex(headers, HEADER_HINTS_LOG, "notes", ["note", "notes", "comment"]);
 
-    matches = rows.map((row, idx) => {
-      const cells = row.c || [];
-      const safe = i => {
-        const cell = cells[i];
-        if (!cell || cell.v == null) return "";
-        return String(cell.v);
-      };
+    const indexes = {
+      date: idxDate,
+      game: idxGame,
+      winners: idxWinners,
+      players: idxPlayers,
+      notes: idxNotes
+    };
 
-      const date       = idxDate    !== -1 ? safe(idxDate)    : "";
-      const game       = idxGame    !== -1 ? safe(idxGame)    : "";
-      const winnersStr = idxWinners !== -1 ? safe(idxWinners) : "";
-      const playersStr = idxPlayers !== -1 ? safe(idxPlayers) : "";
-      const notes      = idxNotes   !== -1 ? safe(idxNotes)   : "";
+    matches = rows
+      .map((row, idx) => parseMatchRow(row, indexes, idx))
+      .filter(m => m.game || m.players.length || m.winners.length);
 
-      const winners = winnersStr
-        .split(/[;,]/)
-        .map(s => s.trim())
-        .filter(Boolean);
+    computeGlobalPlayerStats();
+    computePerGameAggregates();
 
-      const playersArr = playersStr
-        .split(/[;,]/)
-        .map(s => s.trim())
-        .filter(Boolean);
-
-      return {
-        date,
-        game,
-        winners,
-        players: playersArr,
-        notes,
-        timestamp: idx
-      };
-    }).filter(m => m.game || m.players.length || m.winners.length);
-
-    computeStats();
-    computePerGameStats();
-
-    renderSimpleLeaderboard();
-    renderDetailLeaderboard();
-    renderPlayerStatCards();
-    renderHistory();
+    renderAllViews();
     updateLastSync();
   } catch (err) {
     console.error("Games sheet parse error:", err);
@@ -657,7 +710,7 @@ window.handleGamesSheet = function(json) {
   }
 };
 
-window.handlePlayersSheet = function(json) {
+window.handlePlayersSheet = function (json) {
   try {
     const table = json.table;
     const cols = table.cols || [];
@@ -692,16 +745,24 @@ window.handlePlayersSheet = function(json) {
 
     playerMeta = meta;
 
-    renderSimpleLeaderboard();
-    renderDetailLeaderboard();
-    renderPlayerStatCards();
+    renderAllViews();
   } catch (err) {
     console.error("Players sheet parse error:", err);
     updateLastSync("Error syncing players sheet");
   }
 };
+//#endregion
 
-// Tabs //
+//#region Render
+function renderAllViews() {
+  renderSimpleLeaderboard();
+  renderDetailLeaderboard();
+  renderPlayerStatCards();
+  renderHistory();
+}
+//#endregion
+
+//#region UI Setup & Init
 function setupTabs() {
   const tabSimple = document.getElementById("tab-simple");
   const tabDetail = document.getElementById("tab-detail");
@@ -728,7 +789,7 @@ function setupTabs() {
 function setupGameSelectListener() {
   const select = document.getElementById("game-select");
   if (!select || select.dataset.bound) return;
-  select.addEventListener("change", (e) => {
+  select.addEventListener("change", e => {
     const value = e.target.value || null;
     currentSelectedGame = value;
     renderGamePlayerTable();
@@ -736,26 +797,6 @@ function setupGameSelectListener() {
     updatePlayersTitle();
   });
   select.dataset.bound = "1";
-}
-
-function setupCustomGameDropdownToggle() {
-  const dropdown = document.querySelector(".game-dropdown");
-  const toggle = document.getElementById("game-dropdown-toggle");
-  const menu = document.getElementById("game-dropdown-menu");
-  if (!dropdown || !toggle || !menu || toggle.dataset.bound) return;
-
-  toggle.addEventListener("click", (e) => {
-    e.stopPropagation();
-    dropdown.classList.toggle("open");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!dropdown.contains(e.target)) {
-      dropdown.classList.remove("open");
-    }
-  });
-
-  toggle.dataset.bound = "1";
 }
 
 function setupRefreshButton() {
@@ -775,3 +816,4 @@ document.addEventListener("DOMContentLoaded", () => {
   loadGamesSheet();
   loadPlayersSheet();
 });
+//#endregion
