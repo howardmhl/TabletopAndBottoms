@@ -26,7 +26,7 @@ function safeCell(cells, index) {
 function traitorIcon(value) {
   if (!value) return "";
   const v = String(value).trim().toLowerCase();
-  return v === "true" ? "✔️" : "";
+  return v === "true" ? "✔️" : "❌";
 }
 
 function diedIcon(value) {
