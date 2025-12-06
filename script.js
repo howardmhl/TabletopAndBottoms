@@ -389,7 +389,7 @@ function renderGamePageLink() {
   const meta = gameMeta[name];
   if (!meta || !meta.page) return;
 
-  let href = meta.page.trim(); 
+  let href = meta.page.trim();
 
   link.href = href;
   link.textContent = "See more";
