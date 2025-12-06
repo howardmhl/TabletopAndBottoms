@@ -389,14 +389,12 @@ function renderGamePageLink() {
   const meta = gameMeta[name];
   if (!meta || !meta.page) return;
 
-  let href = meta.page.trim();
-  // if (href && !href.endsWith(".html")) href = href + ".html";
+  let href = meta.page.trim(); 
 
   link.href = href;
   link.textContent = "See more";
   link.classList.remove("hidden");
 }
-
 //#endregion
 
 //#region Dropdown
