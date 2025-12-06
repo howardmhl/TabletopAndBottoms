@@ -390,7 +390,7 @@ function renderGamePageLink() {
   if (!meta || !meta.page) return;
 
   let href = meta.page.trim();
-  if (href && !href.endsWith(".html")) href = href + ".html";
+  // if (href && !href.endsWith(".html")) href = href + ".html";
 
   link.href = href;
   link.textContent = "See more";
