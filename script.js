@@ -2,6 +2,7 @@
 const SHEET_ID = "1G2czJrtyfVnZrfXyT7R9B2n4IQm8towBW8zrXL_yBy4";
 const SHEET_LOG_NAME = "log";
 const SHEET_PLAYERS_NAME = "players";
+const SHEET_GAMES_META_NAME = "games";
 
 function buildGvizUrl(sheetName, handlerName) {
   return (
@@ -37,6 +38,7 @@ let playerMeta = {};
 let perGameSummary = {};
 let perGamePlayers = {};
 let currentSelectedGame = null;
+let gameMeta = {};
 //#endregion
 
 //#region Header
@@ -96,6 +98,7 @@ function parseMatchRow(row, indexes, rowIndex) {
 function sortPlayersByWinsThenName(entries) {
   return entries.sort((a, b) => {
     if (b.wins !== a.wins) return b.wins - a.wins;
+    if (b.winRate !== a.winRate) return b.winRate - a.winRate;
     return a.name.localeCompare(b.name);
   });
 }
@@ -367,9 +370,33 @@ function renderDetailLeaderboard() {
   renderGameSelect();
   renderGamePlayerTable();
   updatePlayersTitle();
+  renderGamePageLink();
   const label = document.getElementById("detail-games-label");
   if (label) label.textContent = `Games logged: ${matches.length}`;
 }
+
+function renderGamePageLink() {
+  const link = document.getElementById("game-page-link");
+  if (!link) return;
+
+  link.classList.add("hidden");
+  link.href = "#";
+  link.textContent = "";
+
+  const name = currentSelectedGame;
+  if (!name || name === "__ALL__") return;
+
+  const meta = gameMeta[name];
+  if (!meta || !meta.page) return;
+
+  let href = meta.page.trim();
+  if (href && !href.endsWith(".html")) href = href + ".html";
+
+  link.href = href;
+  link.textContent = "See more";
+  link.classList.remove("hidden");
+}
+
 //#endregion
 
 //#region Dropdown
@@ -450,6 +477,7 @@ function renderGameSelect() {
         renderGamePlayerTable();
         renderGamesSummary();
         updatePlayersTitle();
+        renderGamePageLink();
       });
     });
   }
@@ -636,6 +664,16 @@ function loadGamesSheet() {
   document.body.appendChild(script);
 }
 
+function loadGamesMetaSheet() {
+  const old = document.getElementById("sheet-jsonp-games-meta");
+  if (old) old.remove();
+
+  const script = document.createElement("script");
+  script.id = "sheet-jsonp-games-meta";
+  script.src = buildGvizUrl(SHEET_GAMES_META_NAME, "handleGamesMetaSheet");
+  document.body.appendChild(script);
+}
+
 function loadPlayersSheet() {
   const old = document.getElementById("sheet-jsonp-players");
   if (old) old.remove();
@@ -751,6 +789,36 @@ window.handlePlayersSheet = function (json) {
     updateLastSync("Error syncing players sheet");
   }
 };
+
+window.handleGamesMetaSheet = function (json) {
+  const table = json.table;
+  const cols = table.cols || [];
+  const rows = table.rows || [];
+
+  const headers = cols.map(c => (c.label || c.id || "").trim());
+  const idxName = headers.indexOf("name");
+  const idxPage = headers.indexOf("page");
+
+  const meta = {};
+  rows.forEach(row => {
+    const cells = row.c || [];
+    const safe = i => {
+      const cell = cells[i];
+      if (!cell || cell.v == null) return "";
+      return String(cell.v);
+    };
+
+    const name = idxName !== -1 ? safe(idxName).trim() : "";
+    if (!name) return;
+    const page = idxPage !== -1 ? safe(idxPage).trim() : "";
+
+    meta[name] = { page };
+  });
+
+  gameMeta = meta;
+  renderGamePageLink();
+};
+
 //#endregion
 
 //#region Render
@@ -815,5 +883,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupRefreshButton();
   loadGamesSheet();
   loadPlayersSheet();
+  loadGamesMetaSheet();
 });
 //#endregion

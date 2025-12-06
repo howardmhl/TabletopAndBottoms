@@ -468,3 +468,59 @@ button:hover {
     max-width: 180px;
   }
 }
+
+.card-header .header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header h1 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.chapter-table tbody tr:nth-child(odd) td {
+  background: var(--chip-row);
+}
+
+.chapter-table tbody tr:nth-child(even) td {
+  background: var(--chip-row-alt);
+}
+
+#families-root td {
+  background: transparent !important;
+}
+
+.game-page-footer {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.game-page-link {
+  align-items: center;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  color: var(--text-main);
+  display: inline-flex;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: 0.8rem;
+  gap: 6px;
+  padding: 7px 14px;
+  text-decoration: none;
+}
+
+.game-page-link:hover {
+  background: #fed0aa;
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.game-page-link.hidden {
+  display: none !important;
+}
+
+.chapter-table td.chapter-pad {
+  padding-left: 24px;
+}
