@@ -3,6 +3,8 @@ const SHEET_ID = "1G2czJrtyfVnZrfXyT7R9B2n4IQm8towBW8zrXL_yBy4";
 const SHEET_LOG_NAME = "log";
 const SHEET_PLAYERS_NAME = "players";
 const SHEET_GAMES_META_NAME = "games";
+const SHEET_PRIZES_NAME = "prizes";
+const GAMES_SUMMARY_PAGE_SIZE = 5;
 
 function buildGvizUrl(sheetName, handlerName) {
   return (
@@ -29,6 +31,12 @@ const HEADER_HINTS_PLAYERS = {
   name: null,
   icon: null
 };
+
+const HEADER_HINTS_PRIZES = {
+  name: null,
+  date: null,
+  notes: null
+};
 //#endregion
 
 //#region State
@@ -39,6 +47,9 @@ let perGameSummary = {};
 let perGamePlayers = {};
 let currentSelectedGame = null;
 let gameMeta = {};
+let prizeByPlayer = {};
+
+let gamesSummaryLimit = GAMES_SUMMARY_PAGE_SIZE;
 //#endregion
 
 //#region Header
@@ -177,21 +188,36 @@ function renderPlayerCell(name) {
 function computeGlobalPlayerStats() {
   const stats = {};
   matches.forEach(m => {
+    const matchMs = parseDateToMs(m.date);
+
     m.players.forEach(p => {
       const name = p.trim();
       if (!name) return;
       if (!stats[name]) stats[name] = { games: 0, wins: 0 };
       stats[name].games += 1;
     });
+
     m.winners.forEach(w => {
       const name = w.trim();
       if (!name) return;
       if (!stats[name]) stats[name] = { games: 0, wins: 0 };
-      stats[name].wins += 1;
+
+      const cutoff = prizeByPlayer[name.toLowerCase()]?.dateMs ?? null;
+
+      if (!matchMs || !cutoff) {
+        stats[name].wins += 1;
+        return;
+      }
+
+      if (matchMs > cutoff) {
+        stats[name].wins += 1;
+      }
     });
   });
+
   playersStats = stats;
 }
+
 
 function computePerGameAggregates() {
   const summary = {};
@@ -299,7 +325,9 @@ function renderGamesSummary() {
     return;
   }
 
-  entries.forEach((e, index) => {
+  const visible = entries.slice(0, gamesSummaryLimit);
+
+  visible.forEach((e, index) => {
     const tr = document.createElement("tr");
     const highlightClass = e.game === currentSelectedGame ? "top1" : "";
     tr.innerHTML = `
@@ -309,6 +337,17 @@ function renderGamesSummary() {
     `;
     tbody.appendChild(tr);
   });
+
+  const btn = document.getElementById("games-load-more");
+  if (!btn) return;
+
+  if (gamesSummaryLimit >= entries.length) {
+    btn.classList.add("hidden");
+  } else {
+    btn.classList.remove("hidden");
+    const remaining = entries.length - gamesSummaryLimit;
+    btn.textContent = `Load more`;
+  }
 }
 
 function renderGamePlayerTable() {
@@ -681,6 +720,17 @@ function loadPlayersSheet() {
   script.src = buildGvizUrl(SHEET_PLAYERS_NAME, "handlePlayersSheet");
   document.body.appendChild(script);
 }
+
+function loadPrizesSheet() {
+  const old = document.getElementById("sheet-jsonp-prizes");
+  if (old) old.remove();
+
+  const script = document.createElement("script");
+  script.id = "sheet-jsonp-prizes";
+  script.src = buildGvizUrl(SHEET_PRIZES_NAME, "handlePrizesSheet");
+  document.body.appendChild(script);
+}
+
 //#endregion
 
 //#region JSONP Handlers
@@ -712,6 +762,8 @@ window.handleGamesSheet = function (json) {
     matches = rows
       .map((row, idx) => parseMatchRow(row, indexes, idx))
       .filter(m => m.game || m.players.length || m.winners.length);
+
+    gamesSummaryLimit = GAMES_SUMMARY_PAGE_SIZE;
 
     computeGlobalPlayerStats();
     computePerGameAggregates();
@@ -817,6 +869,61 @@ window.handleGamesMetaSheet = function (json) {
   renderGamePageLink();
 };
 
+window.handlePrizesSheet = function (json) {
+  try {
+    const table = json.table;
+    const cols = table.cols || [];
+    const rows = table.rows || [];
+
+    const headers = cols.map(c => (c.label || c.id || "").trim());
+    if (!headers.length) throw new Error("No columns in prizes sheet");
+
+    const idxName = findColumnIndex(headers, HEADER_HINTS_PRIZES, "name", ["name", "player"]);
+    const idxDate = findColumnIndex(headers, HEADER_HINTS_PRIZES, "date", ["date", "time", "timestamp"]);
+    const idxNotes = findColumnIndex(headers, HEADER_HINTS_PRIZES, "notes", ["notes", "note", "comment"]);
+
+    const map = {};
+
+    rows.forEach(row => {
+      const cells = row.c || [];
+      const safe = i => {
+        const cell = cells[i];
+        if (!cell || cell.v == null) return "";
+        return cell.v;
+      };
+
+      const nameRaw = idxName !== -1 ? safe(idxName) : "";
+      const dateRaw = idxDate !== -1 ? safe(idxDate) : "";
+      const notesRaw = idxNotes !== -1 ? safe(idxNotes) : "";
+
+      const name = String(nameRaw).trim();
+      if (!name) return;
+
+      const dateMs = parseDateToMs(dateRaw);
+      if (!dateMs) return;
+
+      const key = name.toLowerCase();
+      const existing = map[key]?.dateMs ?? 0;
+
+      if (dateMs > existing) {
+        map[key] = { dateMs, notes: String(notesRaw || "").trim() };
+      }
+    });
+
+    prizeByPlayer = map;
+
+    computeGlobalPlayerStats();
+    computePerGameAggregates();
+    renderAllViews();
+  } catch (err) {
+    console.error("Prizes sheet parse error:", err);
+    prizeByPlayer = {};
+    computeGlobalPlayerStats();
+    computePerGameAggregates();
+    renderAllViews();
+  }
+};
+
 //#endregion
 
 //#region Render
@@ -852,6 +959,18 @@ function setupTabs() {
   });
 }
 
+function setupGamesLoadMore() {
+  const btn = document.getElementById("games-load-more");
+  if (!btn || btn.dataset.bound) return;
+
+  btn.addEventListener("click", () => {
+    gamesSummaryLimit += GAMES_SUMMARY_PAGE_SIZE;
+    renderGamesSummary();
+  });
+
+  btn.dataset.bound = "1";
+}
+
 function setupGameSelectListener() {
   const select = document.getElementById("game-select");
   if (!select || select.dataset.bound) return;
@@ -870,7 +989,9 @@ function setupRefreshButton() {
   if (!refreshBtn) return;
   refreshBtn.addEventListener("click", () => {
     loadGamesSheet();
+    loadGamesMetaSheet();
     loadPlayersSheet();
+    loadPrizesSheet();
   });
 }
 
@@ -879,8 +1000,37 @@ document.addEventListener("DOMContentLoaded", () => {
   setupGameSelectListener();
   setupCustomGameDropdownToggle();
   setupRefreshButton();
+  setupGamesLoadMore();
   loadGamesSheet();
   loadPlayersSheet();
   loadGamesMetaSheet();
+  loadPrizesSheet();
 });
+
+function parseDateToMs(value) {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
+
+  const s = String(value || "").trim();
+  if (!s) return null;
+
+  const gviz = s.match(
+    /^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})(?:,\s*(\d{1,2}),\s*(\d{1,2})(?:,\s*(\d{1,2}))?)?\)$/
+  );
+  if (gviz) {
+    const year = Number(gviz[1]);
+    const month = Number(gviz[2]);
+    const day = Number(gviz[3]);
+    const hour = gviz[4] ? Number(gviz[4]) : 0;
+    const minute = gviz[5] ? Number(gviz[5]) : 0;
+    const second = gviz[6] ? Number(gviz[6]) : 0;
+    return new Date(year, month, day, hour, minute, second).getTime();
+  }
+
+  const native = Date.parse(s);
+  if (Number.isFinite(native)) return native;
+
+  return null;
+}
+
 //#endregion

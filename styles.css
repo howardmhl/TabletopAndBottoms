@@ -524,3 +524,9 @@ button:hover {
 .chapter-table td.chapter-pad {
   padding-left: 24px;
 }
+
+.panel-footer {
+  padding-top: 10px;
+  display: flex;
+  justify-content: center;
+}
