@@ -828,3 +828,12 @@ button:disabled {
 .login-view-panel .compact-admin-form {
   max-width: none;
 }
+
+.auth-callback-view {
+  display: grid;
+  min-height: 100vh;
+  align-content: center;
+  width: min(100% - 40px, 1180px);
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}

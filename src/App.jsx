@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { AuthCallbackHandler } from "./components/AuthCallbackHandler";
 import { BetrayalPage } from "./views/BetrayalPage";
 import { LeaderboardPage } from "./views/LeaderboardPage";
 
@@ -11,9 +12,10 @@ export default function App() {
   };
 
   return (
-    <div className="app">
-      {activeView === "betrayal" ? <BetrayalPage onBack={() => showView("leaderboard")} /> : <LeaderboardPage onOpenBetrayal={() => showView("betrayal")} />}
-    </div>
+    <AuthCallbackHandler>
+      <div className="app">
+        {activeView === "betrayal" ? <BetrayalPage onBack={() => showView("leaderboard")} /> : <LeaderboardPage onOpenBetrayal={() => showView("betrayal")} />}
+      </div>
+    </AuthCallbackHandler>
   );
 }
-
