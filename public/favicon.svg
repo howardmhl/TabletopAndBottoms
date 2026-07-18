@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tabletop and Bottoms">
+  <defs>
+    <linearGradient id="bg" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe4e6"/>
+      <stop offset="0.55" stop-color="#fff7ed"/>
+      <stop offset="1" stop-color="#fed7aa"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <rect x="15" y="16" width="34" height="34" rx="8" fill="#fffaf3" stroke="#fb7185" stroke-width="4"/>
+  <circle cx="25" cy="26" r="3.5" fill="#4b2e2b"/>
+  <circle cx="39" cy="26" r="3.5" fill="#4b2e2b"/>
+  <circle cx="25" cy="40" r="3.5" fill="#4b2e2b"/>
+  <circle cx="39" cy="40" r="3.5" fill="#4b2e2b"/>
+</svg>

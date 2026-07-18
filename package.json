@@ -1,0 +1,22 @@
+{
+  "name": "tabletop-and-bottoms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite --host 127.0.0.1 --port 5190",
+    "dev:netlify": "netlify dev --port 8890 --target-port 5190 --no-open",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.4",
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "netlify-cli": "^26.2.0"
+  }
+}
