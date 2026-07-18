@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { fetchTabletopDataFromApi } from "../data/apiData";
 
 const initialTabletopState = {
@@ -14,35 +14,29 @@ const initialTabletopState = {
 export function useTabletopData() {
   const [state, setState] = useState(initialTabletopState);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadData = useCallback(async () => {
+    setState((current) => ({ ...current, loading: true, error: "" }));
 
-    async function loadData() {
-      try {
-        const data = await fetchTabletopDataFromApi();
-        if (!isMounted) return;
-
-        setState({
-          loading: false,
-          error: "",
-          ...data,
-          lastUpdated: new Date()
-        });
-      } catch (error) {
-        if (!isMounted) return;
-        setState((current) => ({
-          ...current,
-          loading: false,
-          error: error instanceof Error ? error.message : "Something went wrong while loading the leaderboard."
-        }));
-      }
+    try {
+      const data = await fetchTabletopDataFromApi();
+      setState({
+        loading: false,
+        error: "",
+        ...data,
+        lastUpdated: new Date()
+      });
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        loading: false,
+        error: error instanceof Error ? error.message : "Something went wrong while loading the leaderboard."
+      }));
     }
-
-    loadData();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  return state;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  return { ...state, refresh: loadData };
 }

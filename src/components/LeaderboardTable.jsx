@@ -1,4 +1,4 @@
-import { EmptyState } from "./StatusCards";
+﻿import { EmptyState } from "./StatusCards";
 import { PlayerBadge } from "./PlayerBadge";
 
 export function LeaderboardTable({ entries, playerMeta }) {
@@ -13,9 +13,9 @@ export function LeaderboardTable({ entries, playerMeta }) {
           <tr>
             <th>Rank</th>
             <th>Player</th>
-            <th>Wins</th>
-            <th>Games</th>
-            <th>Win rate</th>
+            <th>Current wins</th>
+            <th>Current games</th>
+            <th>Prizes</th>
           </tr>
         </thead>
         <tbody>
@@ -27,7 +27,7 @@ export function LeaderboardTable({ entries, playerMeta }) {
               </td>
               <td>{entry.wins}</td>
               <td>{entry.games}</td>
-              <td>{Math.round(entry.winRate)}%</td>
+              <td>{entry.prizesClaimed > 0 ? <PrizePill entry={entry} /> : "-"}</td>
             </tr>
           ))}
         </tbody>
@@ -35,3 +35,16 @@ export function LeaderboardTable({ entries, playerMeta }) {
     </div>
   );
 }
+
+function PrizePill({ entry }) {
+  return (
+    <span className="prize-tooltip-wrap" tabIndex="0">
+      <span className="prize-pill">{entry.prizesClaimed} claimed</span>
+      <span className="prize-tooltip" role="tooltip">
+        Last cashed out{entry.lastPrizeAwardedOnDisplay ? ` on ${entry.lastPrizeAwardedOnDisplay}` : ""}.
+      </span>
+    </span>
+  );
+}
+
+

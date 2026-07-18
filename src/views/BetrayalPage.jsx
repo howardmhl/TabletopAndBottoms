@@ -1,10 +1,11 @@
-import { FAMILY_PLAYERS } from "../config";
+﻿import { FAMILY_PLAYERS } from "../config";
 import { FAMILY_CLASS_NAMES } from "../constants";
 import { ErrorState, LoadingState } from "../components/StatusCards";
 import { useBetrayalData } from "../hooks/useBetrayalData";
 import { truthy } from "../utils/truthy";
+import { formatDateForDisplay } from "../utils/dates";
 
-export function BetrayalPage() {
+export function BetrayalPage({ onBack }) {
   const state = useBetrayalData();
 
   return (
@@ -14,6 +15,9 @@ export function BetrayalPage() {
           <h1>Betrayal Legacy</h1>
           <p>Family Records</p>
         </div>
+        <button type="button" className="back-button" onClick={onBack}>
+          Back to leaderboard
+        </button>
       </section>
 
       {state.loading ? <LoadingState label="Opening the archive" /> : null}
@@ -60,7 +64,7 @@ function ChapterLog({ chapters }) {
                   <strong>{chapter.chapter || "-"}</strong>
                 </td>
                 <td>
-                  <strong>{chapter.date || "-"}</strong>
+                  <strong>{formatDateForDisplay(chapter.date) || "-"}</strong>
                 </td>
                 <td>
                   <strong>{chapter.haunt || "-"}</strong>
@@ -117,3 +121,6 @@ function FamilyCard({ family, members }) {
     </section>
   );
 }
+
+
+

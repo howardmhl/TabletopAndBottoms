@@ -17,3 +17,14 @@ export function parseDateToMs(value) {
   const native = Date.parse(text);
   return Number.isFinite(native) ? native : null;
 }
+
+export function formatDateForDisplay(value) {
+  const dateMs = parseDateToMs(value);
+  if (!dateMs) return "";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(dateMs));
+}

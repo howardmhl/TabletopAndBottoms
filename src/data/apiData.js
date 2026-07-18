@@ -1,4 +1,4 @@
-import { parseDateToMs } from "../utils/dates";
+﻿import { formatDateForDisplay, parseDateToMs } from "../utils/dates";
 
 export async function fetchTabletopDataFromApi() {
   const response = await fetch("/.netlify/functions/tabletop-data");
@@ -31,16 +31,25 @@ export async function fetchTabletopDataFromApi() {
       return games;
     }, {}),
     prizes: data.prizes.reduce((prizes, prize) => {
-      const dateMs = parseDateToMs(prize.awarded_on);
-      if (!prize.player || !dateMs) return prizes;
+      if (!prize.player) return prizes;
 
       const key = prize.player.toLowerCase();
-      const existing = prizes[key]?.dateMs ?? 0;
-      if (dateMs > existing) {
-        prizes[key] = {
-          dateMs,
-          notes: prize.notes ?? ""
-        };
+      const dateMs = parseDateToMs(prize.awarded_on);
+      prizes[key] ??= {
+        count: 0,
+        dateMs: null,
+        awardedOn: "",
+        awardedOnDisplay: "",
+        notes: ""
+      };
+
+      prizes[key].count += 1;
+
+      if (dateMs && dateMs > (prizes[key].dateMs ?? 0)) {
+        prizes[key].dateMs = dateMs;
+        prizes[key].awardedOn = prize.awarded_on ?? "";
+        prizes[key].awardedOnDisplay = formatDateForDisplay(prize.awarded_on);
+        prizes[key].notes = prize.notes ?? "";
       }
 
       return prizes;

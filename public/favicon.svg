@@ -1,15 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tabletop and Bottoms">
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tabletop and Bottoms">
   <defs>
-    <linearGradient id="bg" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#ffe4e6"/>
-      <stop offset="0.55" stop-color="#fff7ed"/>
-      <stop offset="1" stop-color="#fed7aa"/>
+    <linearGradient id="cake" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8cf4ea"/>
+      <stop offset="0.52" stop-color="#fffdf8"/>
+      <stop offset="1" stop-color="#ff8bde"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <rect x="15" y="16" width="34" height="34" rx="8" fill="#fffaf3" stroke="#fb7185" stroke-width="4"/>
-  <circle cx="25" cy="26" r="3.5" fill="#4b2e2b"/>
-  <circle cx="39" cy="26" r="3.5" fill="#4b2e2b"/>
-  <circle cx="25" cy="40" r="3.5" fill="#4b2e2b"/>
-  <circle cx="39" cy="40" r="3.5" fill="#4b2e2b"/>
+  <rect x="4" y="4" width="56" height="56" fill="url(#cake)" stroke="#17124a" stroke-width="5"/>
+  <path d="M14 16h36v6H20v8h26v6H20v12h-6z" fill="#fff25f" opacity="0.95"/>
+  <rect x="17" y="15" width="32" height="32" fill="#fffdf8" stroke="#17124a" stroke-width="4"/>
+  <rect x="21" y="19" width="24" height="24" fill="#ffc1ef"/>
+  <circle cx="27" cy="25" r="3.4" fill="#17124a"/>
+  <circle cx="39" cy="25" r="3.4" fill="#17124a"/>
+  <circle cx="33" cy="31" r="3.4" fill="#17124a"/>
+  <circle cx="27" cy="37" r="3.4" fill="#17124a"/>
+  <circle cx="39" cy="37" r="3.4" fill="#17124a"/>
+  <path d="M8 52h48v8H8z" fill="#9f78ff"/>
+  <path d="M8 52h14v8H8z" fill="#1fe58f"/>
+  <path d="M42 52h14v8H42z" fill="#ff8bde"/>
 </svg>

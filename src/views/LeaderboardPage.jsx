@@ -5,6 +5,7 @@ import { ErrorState, LoadingState } from "../components/StatusCards";
 import { LeaderboardTable } from "../components/LeaderboardTable";
 import { StatsView } from "../components/StatsView";
 import { ViewToggle } from "../components/ViewToggle";
+import { AdminPanel } from "../components/AdminPanel";
 import { computePerGameStats, computePlayerStats, getGamePlayerEntries, getGameSummaryEntries, getRankedLeaderboard } from "../data/stats";
 import { useTabletopData } from "../hooks/useTabletopData";
 import { normalizeAppLink } from "../utils/links";
@@ -13,6 +14,7 @@ export function LeaderboardPage({ onOpenBetrayal }) {
   const [view, setView] = useState("leaderboard");
   const [selectedGame, setSelectedGame] = useState(ALL_GAMES);
   const [summaryLimit, setSummaryLimit] = useState(GAMES_SUMMARY_PAGE_SIZE);
+  const [isPrivateView, setIsPrivateView] = useState(false);
   const state = useTabletopData();
 
   const computed = useMemo(() => {
@@ -32,44 +34,52 @@ export function LeaderboardPage({ onOpenBetrayal }) {
 
   return (
     <main>
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow">Games Night Leaderboard</span>
-          <h1>Tabletop and Bottoms</h1>
-        </div>
-      </section>
+      {!state.loading && !state.error ? (
+        <AdminPanel games={state.games} players={state.players} onModeChange={setIsPrivateView} onSaved={state.refresh} />
+      ) : null}
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <span className="eyebrow">Scoreboard</span>
-            <h2>Games Night</h2>
-          </div>
-          <ViewToggle view={view} onChange={setView} />
-        </div>
+      {!isPrivateView ? (
+        <>
+          <section className="hero">
+            <div className="hero-copy">
+              <span className="eyebrow">Games Night Leaderboard</span>
+              <h1>Tabletop and Bottoms</h1>
+            </div>
+          </section>
 
-        {state.error ? <ErrorState message={state.error} /> : null}
-        {state.loading ? <LoadingState label="Loading game records" /> : null}
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <span className="eyebrow">Scoreboard</span>
+                <h2>Games Night</h2>
+              </div>
+              <ViewToggle view={view} onChange={setView} />
+            </div>
 
-        {!state.loading && !state.error && view === "leaderboard" ? (
-          <LeaderboardTable entries={computed.leaderboard} playerMeta={state.players} />
-        ) : null}
+            {state.error ? <ErrorState message={state.error} /> : null}
+            {state.loading ? <LoadingState label="Loading game records" /> : null}
 
-        {!state.loading && !state.error && view === "stats" ? (
-          <StatsView
-            games={computed.gameOptions}
-            gameSummary={computed.gameSummary}
-            selectedGame={selectedGame}
-            selectedGamePlayers={selectedGamePlayers}
-            selectedGameLink={selectedGameLink}
-            summaryLimit={summaryLimit}
-            onSelectGame={setSelectedGame}
-            onShowMore={() => setSummaryLimit((limit) => limit + GAMES_SUMMARY_PAGE_SIZE)}
-            onOpenBetrayal={onOpenBetrayal}
-            playerMeta={state.players}
-          />
-        ) : null}
-      </section>
+            {!state.loading && !state.error && view === "leaderboard" ? (
+              <LeaderboardTable entries={computed.leaderboard} playerMeta={state.players} />
+            ) : null}
+
+            {!state.loading && !state.error && view === "stats" ? (
+              <StatsView
+                games={computed.gameOptions}
+                gameSummary={computed.gameSummary}
+                selectedGame={selectedGame}
+                selectedGamePlayers={selectedGamePlayers}
+                selectedGameLink={selectedGameLink}
+                summaryLimit={summaryLimit}
+                onSelectGame={setSelectedGame}
+                onShowMore={() => setSummaryLimit((limit) => limit + GAMES_SUMMARY_PAGE_SIZE)}
+                onOpenBetrayal={onOpenBetrayal}
+                playerMeta={state.players}
+              />
+            ) : null}
+          </section>
+        </>
+      ) : null}
 
       <footer className="site-footer">
         {state.lastUpdated ? <span>Loaded {state.lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span> : null}
