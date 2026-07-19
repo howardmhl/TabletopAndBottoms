@@ -18,8 +18,6 @@ TURSO_DATABASE_URL=libsql://tabletopandbottoms-howardmhl.aws-eu-west-1.turso.io
 TURSO_AUTH_TOKEN=your_turso_auth_token_here
 ```
 
-Do not expose the Turso token in React code. It should only exist in local `.env` and Netlify environment variables.
-
 ## Build
 
 ```bash
