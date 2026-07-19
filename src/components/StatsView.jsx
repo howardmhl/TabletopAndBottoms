@@ -50,7 +50,7 @@ export function StatsView({
 
       <section className="sub-panel">
         <div className="sub-panel-heading">
-          <h3>Per-game records</h3>
+          <h3>Player Records</h3>
           {selectedGameLink ? (
             <button className="text-button" type="button" onClick={() => openGameView(selectedGameLink, onOpenBetrayal)}>
               Open game page

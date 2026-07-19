@@ -6,6 +6,10 @@ export async function addPrize(prize) {
   return postAdminData("/.netlify/functions/admin-prize", prize);
 }
 
+export async function addGame(game) {
+  return postAdminData("/.netlify/functions/admin-game", game);
+}
+
 async function postAdminData(url, body) {
   const response = await fetch(url, {
     method: "POST",

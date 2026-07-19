@@ -1,29 +1,21 @@
-﻿import { getUser, login, logout, onAuthChange } from "@netlify/identity";
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { getStoredUser, loginWithIdentity, logoutFromIdentity } from "../data/identityClient";
 
 export function useAuth() {
-  const [auth, setAuth] = useState({ loading: true, user: null });
+  const [auth, setAuth] = useState({ loading: false, user: getStoredUser() });
 
   useEffect(() => {
-    let isMounted = true;
-
-    getUser().then((user) => {
-      if (isMounted) setAuth({ loading: false, user });
-    });
-
-    const unsubscribe = onAuthChange((_event, user) => {
-      setAuth({ loading: false, user });
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
+    const handleAuthChange = (event) => {
+      setAuth({ loading: false, user: event.detail ?? null });
     };
+
+    window.addEventListener("ttnb-auth-change", handleAuthChange);
+    return () => window.removeEventListener("ttnb-auth-change", handleAuthChange);
   }, []);
 
   return {
     ...auth,
-    login,
-    logout
+    login: loginWithIdentity,
+    logout: logoutFromIdentity
   };
 }

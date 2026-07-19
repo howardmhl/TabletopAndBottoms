@@ -5,7 +5,7 @@ import { ErrorState, LoadingState } from "../components/StatusCards";
 import { LeaderboardTable } from "../components/LeaderboardTable";
 import { StatsView } from "../components/StatsView";
 import { ViewToggle } from "../components/ViewToggle";
-import { AdminPanel } from "../components/AdminPanel";
+import { AdminPanel } from "../components/admin/AdminPanel";
 import { computePerGameStats, computePlayerStats, getGamePlayerEntries, getGameSummaryEntries, getRankedLeaderboard } from "../data/stats";
 import { useTabletopData } from "../hooks/useTabletopData";
 import { normalizeAppLink } from "../utils/links";
@@ -14,7 +14,7 @@ export function LeaderboardPage({ onOpenBetrayal }) {
   const [view, setView] = useState("leaderboard");
   const [selectedGame, setSelectedGame] = useState(ALL_GAMES);
   const [summaryLimit, setSummaryLimit] = useState(GAMES_SUMMARY_PAGE_SIZE);
-  const [isPrivateView, setIsPrivateView] = useState(false);
+  const [adminMode, setAdminMode] = useState("public");
   const state = useTabletopData();
 
   const computed = useMemo(() => {
@@ -31,15 +31,37 @@ export function LeaderboardPage({ onOpenBetrayal }) {
 
   const selectedGameLink = selectedGame === ALL_GAMES ? "" : normalizeAppLink(state.games[selectedGame]?.page);
   const selectedGamePlayers = getGamePlayerEntries(selectedGame, computed.perGamePlayers);
+  const isPrivateView = adminMode !== "public";
+  const firstPlacePlayerName = computed.leaderboard[0]?.name ?? "";
 
   return (
     <main>
-      {!state.loading && !state.error ? (
-        <AdminPanel games={state.games} players={state.players} onModeChange={setIsPrivateView} onSaved={state.refresh} />
+      {!state.loading && !state.error && isPrivateView ? (
+        <AdminPanel
+          games={state.games}
+          players={state.players}
+          mode={adminMode}
+          defaultPrizePlayerName={firstPlacePlayerName}
+          onModeChange={setAdminMode}
+          onSaved={state.refresh}
+        />
       ) : null}
 
       {!isPrivateView ? (
         <>
+          {!state.loading && !state.error ? (
+            <div className="top-admin-actions">
+              <AdminPanel
+                games={state.games}
+                players={state.players}
+                mode={adminMode}
+                defaultPrizePlayerName={firstPlacePlayerName}
+                onModeChange={setAdminMode}
+                onSaved={state.refresh}
+              />
+            </div>
+          ) : null}
+
           <section className="hero">
             <div className="hero-copy">
               <span className="eyebrow">Games Night Leaderboard</span>
@@ -81,10 +103,6 @@ export function LeaderboardPage({ onOpenBetrayal }) {
         </>
       ) : null}
 
-      <footer className="site-footer">
-        {state.lastUpdated ? <span>Loaded {state.lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span> : null}
-        <span>Data served from Turso.</span>
-      </footer>
     </main>
   );
 }
